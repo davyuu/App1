@@ -1,0 +1,136 @@
+package com.davyuu.app1;
+
+import android.content.Intent;
+import android.speech.RecognizerIntent;
+import android.speech.SpeechRecognizer;
+import android.support.v7.app.AlertDialog;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ListView;
+import android.widget.TextView;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static android.R.layout.simple_list_item_1;
+
+public class SearchActivity extends AppCompatActivity {
+
+    private EditText searchEditText;
+    private ImageButton searchButton;
+    private ListView searchListView;
+    private List<String> searchList;
+    private ArrayAdapter searchArrayAdapter;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_search);
+
+        final DatabaseHelper dbHelper = new DatabaseHelper(this);
+
+        searchEditText = (EditText) findViewById(R.id.editText_search);
+        searchButton = (ImageButton) findViewById(R.id.button_search);
+        searchListView = (ListView) findViewById(R.id.listView_search);
+        searchButton.setImageResource(R.drawable.microphone);
+
+        searchList = dbHelper.getName();
+
+        searchArrayAdapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, searchList);
+        searchListView.setAdapter(searchArrayAdapter);
+
+        searchEditText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+                searchList();
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+
+            }
+        });
+
+        searchButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                displaySpeechRecognizer();
+            }
+        });
+
+        searchListView.setOnItemClickListener(new AdapterView.OnItemClickListener(){
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long id){
+                String name = ((TextView) view).getText().toString();
+                String surname = dbHelper.getSurname(name);
+                String mark = dbHelper.getMark(name);
+                String studentId = dbHelper.getId(name);
+
+                StringBuffer buffer = new StringBuffer();
+                buffer.append("Id: "+studentId+"\n");
+                buffer.append("Name: "+name+"\n");
+                buffer.append("Surname: "+surname+"\n");
+                buffer.append("Mark: "+mark);
+
+                showMessage("Data", buffer.toString());
+            }
+        });
+    }
+
+    public void showMessage(String title, String msg){
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setCancelable(true);
+        builder.setTitle(title);
+        builder.setMessage(msg);
+        builder.show();
+    }
+
+    private void searchList(){
+        String searchText = searchEditText.getText().toString();
+        searchList = new ArrayList<>();
+
+        DatabaseHelper helper = new DatabaseHelper(this);
+        List<String> nameList = helper.getName();
+
+        for(String name : nameList){
+            if(name.toLowerCase().contains(searchText.toLowerCase())){
+                searchList.add(name);
+            }
+        }
+
+        searchArrayAdapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, searchList);
+        searchListView.setAdapter(searchArrayAdapter);
+    }
+
+    private static final int SPEECH_REQUEST_CODE = 0;
+
+    private void displaySpeechRecognizer() {
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        startActivityForResult(intent, SPEECH_REQUEST_CODE);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode,
+                                    Intent data) {
+        if (requestCode == SPEECH_REQUEST_CODE && resultCode == RESULT_OK) {
+            List<String> results = data.getStringArrayListExtra(
+                    RecognizerIntent.EXTRA_RESULTS);
+            String spokenText = results.get(0);
+            searchEditText.setText(spokenText);
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+}
