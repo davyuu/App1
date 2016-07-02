@@ -16,8 +16,8 @@ import java.util.List;
 public class DetectorActivity extends AppCompatActivity implements RecognitionListener {
 
     private SpeechRecognizer speech;
-    private TextView detectorTextView;
     private Intent recognizerIntent;
+    private TextView detectorTextView;
     private String LOG_TAG = "DetectorActivity";
 
     @Override
@@ -26,11 +26,15 @@ public class DetectorActivity extends AppCompatActivity implements RecognitionLi
         setContentView(R.layout.activity_detector);
 
         detectorTextView = (TextView) findViewById(R.id.textView_detector);
+        createSpeechRecognizer();
+    }
 
+    private void createSpeechRecognizer(){
         speech = SpeechRecognizer.createSpeechRecognizer(this);
         speech.setRecognitionListener(this);
 
         recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        recognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 60000);
         recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
         recognizerIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
 
@@ -49,7 +53,7 @@ public class DetectorActivity extends AppCompatActivity implements RecognitionLi
             speech.destroy();
             Log.i(LOG_TAG, "destroy");
         }
-        speech = null;
+        //speech = null;
         super.onPause();
     }
 
@@ -126,7 +130,7 @@ public class DetectorActivity extends AppCompatActivity implements RecognitionLi
             detectorTextView.setText(spokenText);
         }
         super.onActivityResult(requestCode, resultCode, data);
-        speech.startListening(recognizerIntent);
+        createSpeechRecognizer();
     }
 
     public static String getErrorText(int errorCode) {
